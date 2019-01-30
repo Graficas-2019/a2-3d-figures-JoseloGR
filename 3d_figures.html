@@ -15,10 +15,12 @@
 		        var canvas = document.getElementById("webglcanvas");
 			    var gl = initWebGL(canvas);
 		        initViewport(gl, canvas);
-		        initGL(canvas);
+				initGL(canvas);
+				var pentagonal = createOctahedron(gl, [6, 0, 0], [0, 1, 0]);
+				var dodecahedron = createDodecahedron(gl, [0, 0, 0], [-0.4, 1.0, 0.1]);
 				initShader(gl);
 				// TO DO: create and draw the figures
-				run(gl, []);
+				run(gl, [pentagonal, dodecahedron]);
 			}
 	);
 
@@ -27,7 +29,7 @@
 </head>
 <body>
 
-    <canvas id="webglcanvas" style="border: none;" width="500" height="500"></canvas>
+    <canvas id="webglcanvas" style="border: none;" width="1000" height="500"></canvas>
 
 </body>
 </html>

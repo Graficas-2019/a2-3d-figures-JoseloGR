@@ -3,7 +3,7 @@ var projectionMatrix;
 var shaderProgram, shaderVertexPositionAttribute, shaderVertexColorAttribute, 
     shaderProjectionMatrixUniform, shaderModelViewMatrixUniform;
 
-var duration = 5000; // ms
+var duration = 10000; // ms
 
 // Attributes: Input variables used in the vertex shader. Since the vertex shader is called on each vertex, these will be different every time the vertex shader is invoked.
 // Uniforms: Input variables for both the vertex and fragment shaders. These do not change values from vertex to vertex.
@@ -66,10 +66,283 @@ function initGL(canvas)
 {
     // Create a project matrix with 45 degree field of view
     projectionMatrix = mat4.create();
-    mat4.perspective(projectionMatrix, Math.PI / 4, canvas.width / canvas.height, 1, 10000);
+    mat4.perspective(projectionMatrix, Math.PI / 4, canvas.width / canvas.height, 1, 100);
+    mat4.translate(projectionMatrix, projectionMatrix, [0, 0, -10]);
 }
 
 // TO DO: Create the functions for each of the figures.
+// Create the vertex, color and index data for a multi-colored Octahedron
+function createOctahedron(gl, translation, rotationAxis) {
+    // Vertex Data
+    var vertexBuffer;
+    vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+    var vertices = [
+        // Top Front face
+        0.0,  1.0,  0.0,
+        -1.0, -1.0,  1.0,
+        1.0, -1.0,  1.0,
+        // Top Right face
+        0.0,  1.0,  0.0,
+        1.0, -1.0,  1.0,
+        1.0, -1.0, -1.0,
+        // Top Back face
+        0.0,  1.0,  0.0,
+        1.0, -1.0, -1.0,
+        -1.0, -1.0, -1.0,
+        // Top Left face
+        0.0,  1.0,  0.0,
+        -1.0, -1.0, -1.0,
+        -1.0, -1.0,  1.0,
+
+        // Bottom Front face
+        0.0,  -1.0,  0.0,
+        -1.0, -1.0,  1.0,
+        1.0, -1.0,  1.0,
+    ];
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+    // Color data
+    var colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    var faceColors = [
+        [1.0, 0.0, 0.0, 1.0], // Front face
+        [0.0, 1.0, 0.0, 1.0], // Right face
+        [0.0, 0.0, 1.0, 1.0], // Back face
+        [1.0, 1.0, 0.0, 1.0], // Left face
+        [0.0, 1.0, 0.0, 1.0], // Bottom Front face
+    ];
+
+    // Each vertex must have the color information, that is why the same color is concatenated 3 times, one for each vertex of the pyramid's face.
+    var vertexColors = [];
+    for (const color of faceColors) {
+        for (var j=0; j < 3; j++)
+            vertexColors = vertexColors.concat(color);
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexColors), gl.STATIC_DRAW);
+
+    // Index data (defines the triangles to be drawn).
+    var pentagonalIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pentagonalIndexBuffer);
+    var pentagonalIndices = [
+        0, 1, 2, 
+        3,4,5, 
+        6,7,8, 
+        9,10,11,
+        12,13,14
+    ];
+
+    // gl.ELEMENT_ARRAY_BUFFER: Buffer used for element indices.
+    // Uint16Array: Array of 16-bit unsigned integers.
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(pentagonalIndices), gl.STATIC_DRAW);
+
+    var pentagonal = {
+        buffer: vertexBuffer, 
+        colorBuffer: colorBuffer, 
+        indices: pentagonalIndexBuffer,
+        vertSize: 3,  // tamaño de cada vertice x,y,z
+        nVerts: vertices.length/3,    //tamaño de buffer/3     3 por cada cara
+        colorSize: 4,  //rgba
+        nColors: vertices.length/3, // colores igual en numero de vertices 
+        nIndices: 15,
+        primtype:gl.TRIANGLES, 
+        modelViewMatrix: mat4.create(), 
+        currentTime : Date.now()
+    };
+    
+    mat4.translate(pentagonal.modelViewMatrix, pentagonal.modelViewMatrix, translation);
+
+    pentagonal.update = function(){
+        var now = Date.now();
+        var deltat = now - this.currentTime;
+        this.currentTime = now;
+        var fract = deltat / duration;
+        var angle = Math.PI * 2 * fract;
+    
+        // Rotates a mat4 by the given angle
+        // mat4 out the receiving matrix
+        // mat4 a the matrix to rotate
+        // Number rad the angle to rotate the matrix by
+        // vec3 axis the axis to rotate around
+        mat4.rotate(this.modelViewMatrix, this.modelViewMatrix, angle, rotationAxis);
+
+    }
+
+    return pentagonal;
+}
+
+// Create the vertex, color and index data for a multi-colored Dodecahedron
+function createDodecahedron(gl, translation, rotationAxis) {
+    // Vertex Data
+    var vertexBuffer;
+    vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+    var vertices = [
+        0.35682,    0,         0.93417,   //v0
+        -0.35682,   0,         0.93417,   //v1
+        0,          0.93417,   0.35682,   //v2
+  
+        0.57735,    0.57735,   0.57735,   //v3
+        -0.57735,   0.57735,   0.57735,   //v4
+  
+        0,         -0.93417,   0.35682,   //v5
+        0.57735,   -0.57735,   0.57735,   //v6
+        -0.57735,  -0.57735,   0.57735,   //v7
+
+        0.93417,    0.35682,   0,         //v8
+        0.93417,    -0.35682,  0,         //v9
+        -0.93417,   0.35682,   0,         //v10
+
+        -0.93417,  -0.35682,   0,         //v11
+        0,         -0.93417,   -0.35682,  //v12
+        -0.57735,  -0.57735,   -0.57735,  //v13
+
+        0.93417,   -0.35682,   0,         //v14 
+        0.57735,   -0.57735,   -0.57735,  //v15
+
+        0.35682,    0,         -0.93417,  //v16
+        -0.35682,   0,         -0.93417,  //v17
+        0,          0.93417,   -0.35682,  //v18      
+
+        0.57735,    0.57735,   -0.57735,  //v19
+        -0.57735,   0.57735,   -0.57735,  //v20
+    ];
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+    // Color data
+    var colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    var faceColors = [
+        [0.0, 1.0, 0.0, 1.0], // Front face
+        [1.0, 1.0, 1.0, 1.0], // Front face
+        [0.2, 0.0, 1.0, 1.0], // Back face
+        [0.3, 0.0, 1.0, 1.0], // Back face
+        [0.4, 1.0, 0.0, 1.0], // Front face
+        [0.5, 1.0, 0.0, 1.0], // Front face
+        [1.0, 0.9, 1.0, 1.0], // Front face
+        [0.6, 0.0, 1.0, 1.0], // Back face
+        [0.7, 0.0, 1.0, 1.0], // Back face
+        [0.8, 1.0, 0.0, 1.0], // Front face
+        [0.7, 0.3, 1.0, 1.0], // Back face
+        [0.8, 1.0, 0.5, 1.0], // Front face
+    ];
+
+    // Each vertex must have the color information, that is why the same color is concatenated 3 times, one for each vertex of the pentagon's face.
+    var vertexColors = [];
+    for (const color of faceColors) {
+        for (var j=0; j < 3; j++)
+            vertexColors = vertexColors.concat(color);
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexColors), gl.STATIC_DRAW);
+
+    // Index data (defines the triangles to be drawn).
+    var dodecahedronIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, dodecahedronIndexBuffer);
+    var dodecahedronIndices = [
+        // Top Front face
+        0, 1, 2,
+        0, 2, 3,
+        1, 2, 4,
+
+        // Top Front face
+        0, 1, 5,
+        0, 5, 6,
+        1, 5, 7,
+
+        // Top Right face
+        0, 3, 8,
+        0, 6, 8,
+        6, 8, 9,
+
+        // Top Left face
+        1, 4, 10,
+        1, 7, 10,
+        7, 10, 11,
+
+        //Bottom Top face
+        12, 15, 16,
+        12, 13, 16,
+        13, 16, 17,
+        
+        //Bottom Bottom face
+        16, 17, 18,
+        16, 18, 19,
+        17, 18, 20,
+
+        //Bottom Left face
+        13, 17, 10,
+        10, 11, 13,
+        10, 17, 20,
+
+        //Bottom Right face
+        8, 15, 16,
+        8, 16, 19,
+        8, 9, 15,
+
+        //Back Top face
+        2, 8,18,
+        2, 3, 8,
+        8, 18, 19,
+
+        // Front Left face
+        5, 7, 11,
+        5, 11, 12,
+        11, 12, 13,
+
+        //Front Right face
+        5, 6, 14,
+        5, 12, 14,
+        12, 14, 15,
+
+        2, 4, 10,
+        2, 10, 20,
+        2, 18, 20,
+    ];
+
+    // gl.ELEMENT_ARRAY_BUFFER: Buffer used for element indices.
+    // Uint16Array: Array of 16-bit unsigned integers.
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(dodecahedronIndices), gl.STATIC_DRAW);
+
+    var dodecahedron = {
+        buffer: vertexBuffer, 
+        colorBuffer: colorBuffer, 
+        indices: dodecahedronIndexBuffer,
+        vertSize: 3,  // tamaño de cada vertice x,y,z
+        nVerts: vertices.length/3,    //tamaño de buffer/3     3 por cada cara
+        colorSize: 4,  //rgba
+        nColors: 3, // colores igual en numero de vertices 
+        nIndices: 108,
+        primtype:gl.TRIANGLES, 
+        modelViewMatrix: mat4.create(), 
+        currentTime : Date.now()
+    };
+    
+    mat4.translate(dodecahedron.modelViewMatrix, dodecahedron.modelViewMatrix, translation);
+
+    dodecahedron.update = function(){
+        var now = Date.now();
+        var deltat = now - this.currentTime;
+        this.currentTime = now;
+        var fract = deltat / duration;
+        var angle = Math.PI * 2 * fract;
+    
+        // Rotates a mat4 by the given angle
+        // mat4 out the receiving matrix
+        // mat4 a the matrix to rotate
+        // Number rad the angle to rotate the matrix by
+        // vec3 axis the axis to rotate around
+        mat4.rotate(this.modelViewMatrix, this.modelViewMatrix, angle, rotationAxis);
+
+    }
+    return dodecahedron;
+}
+
 
 function createShader(gl, str, type)
 {
