@@ -16,11 +16,12 @@
 			    var gl = initWebGL(canvas);
 		        initViewport(gl, canvas);
 				initGL(canvas);
+				// TO DO: create and draw the figures
 				var pentagonal = createOctahedron(gl, [6, 0, 0], [0, 1, 0]);
 				var dodecahedron = createDodecahedron(gl, [0, 0, 0], [-0.4, 1.0, 0.1]);
+				var pyramid = createPyramid(gl, [-6, 0, 0], [0.1, 1.0, 0.2]);
 				initShader(gl);
-				// TO DO: create and draw the figures
-				run(gl, [pentagonal, dodecahedron]);
+				run(gl, [pentagonal, dodecahedron, pyramid]);
 			}
 	);
 

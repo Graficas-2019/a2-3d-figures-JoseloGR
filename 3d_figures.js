@@ -79,27 +79,37 @@ function createOctahedron(gl, translation, rotationAxis) {
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 
     var vertices = [
-        // Top Front face
+        0.0,  0.0,  1.0,
         0.0,  1.0,  0.0,
-        -1.0, -1.0,  1.0,
-        1.0, -1.0,  1.0,
-        // Top Right face
-        0.0,  1.0,  0.0,
-        1.0, -1.0,  1.0,
-        1.0, -1.0, -1.0,
-        // Top Back face
-        0.0,  1.0,  0.0,
-        1.0, -1.0, -1.0,
-        -1.0, -1.0, -1.0,
-        // Top Left face
-        0.0,  1.0,  0.0,
-        -1.0, -1.0, -1.0,
-        -1.0, -1.0,  1.0,
+        1.0,  0.0,  0.0,
 
-        // Bottom Front face
-        0.0,  -1.0,  0.0,
-        -1.0, -1.0,  1.0,
-        1.0, -1.0,  1.0,
+        0.0,  0.0,  1.0,
+        1.0,  0.0,  0.0,
+        0.0,  -1.0, 0.0,
+
+        0.0,  0.0,  1.0,
+        0.0,  -1.0, 0.0,
+        -1.0, 0.0,  0.0,
+        
+        0.0,  0.0,  1.0,
+        -1.0, 0.0,  0.0,
+        0.0,  1.0,  0.0,
+        
+        0.0,  0.0,  -1.0,
+        0.0,  1.0,  0.0,
+        1.0,  0.0,  0.0,
+        
+        0.0,  0.0,  -1.0,
+        1.0,  0.0,  0.0,
+        0.0,  -1.0, 0.0,
+        
+        0.0,  0.0,  -1.0,
+        0.0,  -1.0, 0.0,
+        -1.0, 0.0,  0.0,
+        
+        0.0,  0.0,  -1.0,
+        -1.0, 0.0,  0.0,
+        0.0,  1.0,  0.0,
     ];
 
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -111,8 +121,11 @@ function createOctahedron(gl, translation, rotationAxis) {
         [1.0, 0.0, 0.0, 1.0], // Front face
         [0.0, 1.0, 0.0, 1.0], // Right face
         [0.0, 0.0, 1.0, 1.0], // Back face
-        [1.0, 1.0, 0.0, 1.0], // Left face
-        [0.0, 1.0, 0.0, 1.0], // Bottom Front face
+        [1.0, 1.0, 1.0, 1.0], // Left face
+        [0.0, 0.0, 1.0, 1.0], // Bottom 
+        [0.2, 0.6, 0.2, 1.0], // Bottom 
+        [0.8, 0.8, 0.0, 1.0], // Bottom 
+        [0.5, 0.5, 0.5, 1.0], // Bottom 
     ];
 
     // Each vertex must have the color information, that is why the same color is concatenated 3 times, one for each vertex of the pyramid's face.
@@ -125,37 +138,40 @@ function createOctahedron(gl, translation, rotationAxis) {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexColors), gl.STATIC_DRAW);
 
     // Index data (defines the triangles to be drawn).
-    var pentagonalIndexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pentagonalIndexBuffer);
-    var pentagonalIndices = [
-        0, 1, 2, 
-        3,4,5, 
-        6,7,8, 
+    var octahedronIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, octahedronIndexBuffer);
+    var octahedronIndices = [
+        0,1,2,
+        3,4,5,
+        6,7,8,
         9,10,11,
-        12,13,14
+        12,13,14,
+        15,16,17,
+        18,19,20,
+        21,22,23
     ];
 
     // gl.ELEMENT_ARRAY_BUFFER: Buffer used for element indices.
     // Uint16Array: Array of 16-bit unsigned integers.
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(pentagonalIndices), gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(octahedronIndices), gl.STATIC_DRAW);
 
-    var pentagonal = {
+    var octahedron = {
         buffer: vertexBuffer, 
         colorBuffer: colorBuffer, 
-        indices: pentagonalIndexBuffer,
+        indices: octahedronIndexBuffer,
         vertSize: 3,  // tamaño de cada vertice x,y,z
         nVerts: vertices.length/3,    //tamaño de buffer/3     3 por cada cara
         colorSize: 4,  //rgba
         nColors: vertices.length/3, // colores igual en numero de vertices 
-        nIndices: 15,
+        nIndices: octahedronIndices.length,
         primtype:gl.TRIANGLES, 
         modelViewMatrix: mat4.create(), 
         currentTime : Date.now()
     };
     
-    mat4.translate(pentagonal.modelViewMatrix, pentagonal.modelViewMatrix, translation);
-
-    pentagonal.update = function(){
+    var up = true;
+    mat4.translate(octahedron.modelViewMatrix, octahedron.modelViewMatrix, translation);
+    octahedron.update = function(){
         var now = Date.now();
         var deltat = now - this.currentTime;
         this.currentTime = now;
@@ -169,9 +185,22 @@ function createOctahedron(gl, translation, rotationAxis) {
         // vec3 axis the axis to rotate around
         mat4.rotate(this.modelViewMatrix, this.modelViewMatrix, angle, rotationAxis);
 
+        if (up) {
+            mat4.translate(this.modelViewMatrix, this.modelViewMatrix, [0.0, 5.0*fract, 0]);
+            // If reached the top change to down
+            if (this.modelViewMatrix[13]>3) {
+              up = false;
+            }
+        } else{
+            mat4.translate(this.modelViewMatrix, this.modelViewMatrix, [0.0, -5.0*fract, 0]);
+            // If in bottom change direction
+            if (this.modelViewMatrix[13]<-3) {
+                up = true;
+            }
+        }
     }
 
-    return pentagonal;
+    return octahedron;
 }
 
 // Create the vertex, color and index data for a multi-colored Dodecahedron
@@ -223,19 +252,19 @@ function createDodecahedron(gl, translation, rotationAxis) {
         [0.2, 0.0, 1.0, 1.0], // Back face
         [0.3, 0.0, 1.0, 1.0], // Back face
         [0.4, 1.0, 0.0, 1.0], // Front face
-        [0.5, 1.0, 0.0, 1.0], // Front face
+        [0.5, 0.5, 1.0, 1.0], // Front face
         [1.0, 0.9, 1.0, 1.0], // Front face
         [0.6, 0.0, 1.0, 1.0], // Back face
         [0.7, 0.0, 1.0, 1.0], // Back face
         [0.8, 1.0, 0.0, 1.0], // Front face
         [0.7, 0.3, 1.0, 1.0], // Back face
-        [0.8, 1.0, 0.5, 1.0], // Front face
+        [0.8, 1.0, 0.5, 1.0] // Front face
     ];
 
     // Each vertex must have the color information, that is why the same color is concatenated 3 times, one for each vertex of the pentagon's face.
     var vertexColors = [];
     for (const color of faceColors) {
-        for (var j=0; j < 3; j++)
+        for (var j=0; j < 5; j++)
             vertexColors = vertexColors.concat(color);
     }
 
@@ -316,8 +345,8 @@ function createDodecahedron(gl, translation, rotationAxis) {
         vertSize: 3,  // tamaño de cada vertice x,y,z
         nVerts: vertices.length/3,    //tamaño de buffer/3     3 por cada cara
         colorSize: 4,  //rgba
-        nColors: 3, // colores igual en numero de vertices 
-        nIndices: 108,
+        nColors: vertices.length/3, // colores igual en numero de vertices 
+        nIndices: dodecahedronIndices.length,
         primtype:gl.TRIANGLES, 
         modelViewMatrix: mat4.create(), 
         currentTime : Date.now()
@@ -341,6 +370,126 @@ function createDodecahedron(gl, translation, rotationAxis) {
 
     }
     return dodecahedron;
+}
+
+// Create the vertex, color and index data for a multi-colored pentagonal pyramid
+function createPyramid(gl, translation, rotationAxis) {
+    // Vertex Data
+    var vertexBuffer;
+    vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+    var vertices = [
+         //Base
+         -0.5, -1.0,  0.0,
+         0.5, -1.0,  0.0,
+         1.0, -1.0,  -1.0,
+
+        -0.5, -1.0,  0.0,
+         1.0, -1.0,  -1.0,
+         0.0, -1.0, -2.0,
+
+        -0.5, -1.0,  0.0,
+         0.0, -1.0, -2.0,
+        -1.0, -1.0, -1.0,
+
+        //Faces
+        -0.5, -1.0,  0.0,
+         0.5, -1.0,  0.0,
+         0.0,  1.0, -1.0,
+
+         0.5, -1.0,  0.0,
+         1.0, -1.0, -1.0,
+         0.0, 1.0,  -1.0,
+
+         1.0, -1.0, -1.0,
+         0.0, -1.0, -2.0,
+         0.0,  1.0, -1.0,
+
+         0.0, -1.0, -2.0,
+        -1.0, -1.0, -1.0,
+         0.0,  1.0, -1.0,
+
+        -1.0, -1.0, -1.0,
+        -0.5, -1.0, 0.0,
+         0.0, 1.0, -1.0
+        
+    ];
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+    // Color data
+    var colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    var faceColors = [
+        [1.0, 0.0, 0.0, 1.0], 
+        [0.0, 1.0, 0.0, 1.0], 
+        [0.0, 0.0, 1.0, 1.0], 
+        [1.0, 1.0, 1.0, 1.0], 
+        [0.0, 0.0, 1.0, 1.0],  
+        [0.2, 0.6, 0.2, 1.0],  
+        [0.8, 0.8, 0.0, 1.0],  
+        [0.5, 0.5, 0.5, 1.0], 
+    ];
+
+    // Each vertex must have the color information, that is why the same color is concatenated 3 times, one for each vertex of the pyramid's face.
+    var vertexColors = [];
+    for (const color of faceColors) {
+        for (var j=0; j < 3; j++)
+            vertexColors = vertexColors.concat(color);
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexColors), gl.STATIC_DRAW);
+
+    // Index data (defines the triangles to be drawn).
+    var pyramidIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pyramidIndexBuffer);
+    var pyramidIndices = [
+        0,  1,  2,      
+        3,  4,  5,      
+        6,  7,  8,      
+        9,  10, 11,
+        12, 13, 14,   
+        15, 16, 17,   
+        18, 19, 20,   
+        21, 22, 23    
+    ];
+
+    // gl.ELEMENT_ARRAY_BUFFER: Buffer used for element indices.
+    // Uint16Array: Array of 16-bit unsigned integers.
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(pyramidIndices), gl.STATIC_DRAW);
+
+    var pyramid = {
+        buffer: vertexBuffer, 
+        colorBuffer: colorBuffer, 
+        indices: pyramidIndexBuffer,
+        vertSize: 3,
+        nVerts: vertices.length,
+        colorSize: 4, //rgba
+        nColors: vertices.length,
+        nIndices: pyramidIndices.length,
+        primtype:gl.TRIANGLES, 
+        modelViewMatrix: mat4.create(), 
+        currentTime : Date.now()
+    };
+    
+    mat4.translate(pyramid.modelViewMatrix, pyramid.modelViewMatrix, translation);
+    pyramid.update = function(){
+        var now = Date.now();
+        var deltat = now - this.currentTime;
+        this.currentTime = now;
+        var fract = deltat / duration;
+        var angle = Math.PI * 2 * fract;
+    
+        // Rotates a mat4 by the given angle
+        // mat4 out the receiving matrix
+        // mat4 a the matrix to rotate
+        // Number rad the angle to rotate the matrix by
+        // vec3 axis the axis to rotate around
+        mat4.rotate(this.modelViewMatrix, this.modelViewMatrix, angle, rotationAxis);
+    }
+
+    return pyramid;
 }
 
 
